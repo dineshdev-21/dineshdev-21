@@ -1,0 +1,55 @@
+name: Commit Tower
+
+on:
+  schedule:
+    # Runs daily at 00:15 UTC to evaluate the day's activity
+    - cron: "15 0 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "tower/**"
+      - "README.md"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: commit-tower
+  cancel-in-progress: false
+
+jobs:
+  build-tower:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow
+
+      - name: Run Commit Tower Engine
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/generate_tower.py --username "${{ github.repository_owner }}" --output-dir tower
+
+      - name: Commit and Push Tower State
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tower/
+          if git diff --cached --quiet; then
+            echo "Tower state unchanged; nothing to commit."
+            exit 0
+          fi
+          git commit -m "tower: update floors from latest activity [skip ci]"
+          git push

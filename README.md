@@ -1,30 +1,48 @@
 # Hi there, I'm Dinesh 👋
 
-<p align="center">
-  <a href="https://github.com/yalongwastaken/git-koi">
-    <img src="koi/koi.gif" width="256" alt="My koi, redrawn every night from GitHub activity" />
+<div align="center">
+  <a href="https://github.com/dineshdev-21">
+    <img src="tower/tower.gif" width="380" alt="Dinesh's Commit Tower" />
   </a>
   <br>
-  <em>A pixel-art koi swimming in my GitHub pond, colored by my languages and grown by my contributions.</em>
-</p>
+  <p>
+    <b>🏙️ The Commit Tower:</b> A live pixel-art skyscraper powered by my GitHub commits.<br>
+    <i>Active commits build floors & deploy cranes • Inactive days bring the wrecking ball!</i>
+  </p>
+</div>
 
 ---
 
-### 🌊 About the Koi
-This koi fish is dynamically drawn and updated every night by [`git-koi`](https://github.com/yalongwastaken/git-koi).
-- **Body & Fins:** Grown from public contributions and streaks.
-- **Colors:** Derived from repository language distribution.
-- **Swim Pattern:** Changes daily based on the previous day's activity.
+### 🕹️ How The Tower Works
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                      🏙️ COMMIT TOWER RULES                      │
+├─────────────────────────────────────────────────────────────────┤
+│ 🔨 COMMITTING: Active commit days build new floors & deploy the │
+│    yellow construction crane with animated welding sparks!       │
+│                                                                 │
+│ ⚠️ INACTIVITY: Missing days activates the demolition crane     │
+│    and swings the wrecking ball, demolishing floors one by one! │
+│                                                                 │
+│ 🏢 MILESTONES:                                                  │
+│    • Floor 1: Ground Lobby & Tech Foundation                   │
+│    • Floors 2–6: Core Engineering & Office Levels               │
+│    • Floors 7–10: High-Rise Cloud Server & Tech Labs            │
+│    • Floors 11–12+: Executive Penthouse & Rooftop Helipad       │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-### 🚀 Projects & Work
-- [RoadIQ](https://github.com/dineshdev-21/RoadIQ)
-- [Safari-Rag](https://github.com/dineshdev-21/Safari-Rag)
-- [my-portfolio](https://github.com/dineshdev-21/my-portfolio)
-- [lil-agents](https://github.com/dineshdev-21/lil-agents)
+### 🚀 Featured Projects & Work
+- [RoadIQ](https://github.com/dineshdev-21/RoadIQ) — Intelligent road analytics and computer vision system.
+- [Safari-Rag](https://github.com/dineshdev-21/Safari-Rag) — Retrieval-Augmented Generation pipeline.
+- [my-portfolio](https://github.com/dineshdev-21/my-portfolio) — Personal web portfolio and interactive showcases.
+- [lil-agents](https://github.com/dineshdev-21/lil-agents) — Autonomous agent workflows and tool integrations.
 
 ---
+
 <p align="center">
-  <sub>Powered by <a href="https://github.com/yalongwastaken/git-koi">git-koi</a></sub>
+  <sub>Automated nightly via GitHub Actions ⚡ Powered by custom pixel-art engine</sub>
 </p>
