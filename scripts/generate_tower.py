@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-commit-tower: A dynamic pixel-art building visualization for GitHub profiles.
+The Commit Tower: Dynamic Pixel-Art Skyscraper & Demolition Engine for GitHub Profiles.
 Builds automatically after your commits; demolishes floor-by-floor when inactive!
 """
 
@@ -8,42 +8,18 @@ import os
 import sys
 import math
 import json
-import random
 import urllib.request
 import urllib.error
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from PIL import Image, ImageDraw
 
-# Canvas dimensions
-WIDTH = 260
-HEIGHT = 320
-SCALE = 2  # Scaled output: 520x640
+WIDTH = 380
+HEIGHT = 250
+SCALE = 2  # 760 x 500 High-Definition Retro Pixel Art
 TOTAL_FRAMES = 8
 MAX_FLOORS = 12
 
-# Color Palette
-C_SKY_TOP = (10, 14, 26)
-C_SKY_BOT = (22, 27, 46)
-C_STARS = [(220, 235, 255), (170, 200, 255), (255, 245, 210)]
-C_DISTANT_BLDGS = (18, 22, 38)
-C_DISTANT_WIN = (35, 45, 70)
-
-C_ROAD = (28, 33, 40)
-C_ROAD_LINE = (210, 153, 34)
-C_SIDEWALK = (45, 51, 59)
-C_SIDEWALK_LINE = (55, 62, 71)
-
-C_CONE_ORANGE = (247, 129, 102)
-C_CONE_WHITE = (240, 246, 252)
-
-C_BLDG_WALL = (31, 36, 44)
-C_BLDG_EDGE = (48, 54, 61)
-C_BLDG_LOBBY = (40, 46, 54)
-C_CRANE_STEEL = (227, 179, 65)
-C_CRANE_DARK = (150, 115, 30)
-C_CABLE = (110, 118, 129)
-
-# 3x5 Pixel Font
+# Custom 3x5 Bitmap Pixel Font (100% portable, zero system font dependencies)
 FONT_3x5 = {
     '0': ['111','101','101','101','111'], '1': ['010','110','010','010','111'],
     '2': ['111','001','111','100','111'], '3': ['111','001','111','001','111'],
@@ -68,6 +44,9 @@ FONT_3x5 = {
     '!': ['010','010','010','000','010'], '/': ['001','001','010','100','100'],
     '[': ['110','100','100','100','110'], ']': ['011','001','001','001','011'],
     '.': ['000','000','000','000','010'], '*': ['000','101','010','101','000'],
+    '#': ['010','111','010','111','010'], '<': ['001','010','100','010','001'],
+    '>': ['100','010','001','010','100'], ',': ['000','000','000','010','100'],
+    '(': ['010','100','100','100','010'], ')': ['010','001','001','001','010'],
 }
 
 def draw_pixel_text(draw, text, x, y, color=(255, 255, 255), scale=1):
@@ -148,7 +127,6 @@ def calculate_building_state(days_list):
       Inactive day (0 commits): -1 floor. Min 1 floor (foundation lobby).
     """
     if not days_list:
-        # Graceful defaults
         return {
             "floors": 4,
             "status": "CONSTRUCTING",
@@ -168,14 +146,12 @@ def calculate_building_state(days_list):
         else:
             floors = max(1, floors - 1)
 
-    # Check streak & inactivity
     reversed_days = list(reversed(days_list))
     today_commits = reversed_days[0]["contributionCount"] if reversed_days else 0
 
     streak = 0
     inactive_days = 0
 
-    # If committed today or yesterday
     if today_commits > 0:
         for d in reversed_days:
             if d["contributionCount"] > 0:
@@ -185,7 +161,6 @@ def calculate_building_state(days_list):
         inactive_days = 0
         status = "CONSTRUCTING"
     else:
-        # Inactive today; count how many consecutive days inactive
         for d in reversed_days:
             if d["contributionCount"] == 0:
                 inactive_days += 1
@@ -206,300 +181,296 @@ def calculate_building_state(days_list):
     }
 
 
-def draw_background(draw, frame_idx):
-    # Twilight sky gradient
-    for y in range(HEIGHT):
-        ratio = y / HEIGHT
-        r = int(C_SKY_TOP[0] * (1 - ratio) + C_SKY_BOT[0] * ratio)
-        g = int(C_SKY_TOP[1] * (1 - ratio) + C_SKY_BOT[1] * ratio)
-        b = int(C_SKY_TOP[2] * (1 - ratio) + C_SKY_BOT[2] * ratio)
-        draw.line([(0, y), (WIDTH, y)], fill=(r, g, b))
-
-    # Stars with gentle twinkling
-    star_positions = [
-        (20, 48, 0), (55, 30, 1), (105, 52, 2), (185, 35, 0), (235, 50, 1),
-        (35, 85, 2), (215, 95, 0), (75, 110, 1), (155, 125, 2), (18, 145, 0),
-        (242, 135, 1), (92, 38, 2), (175, 75, 0), (28, 120, 1), (228, 110, 2)
-    ]
-    for x, y, color_idx in star_positions:
-        twinkle = math.sin((frame_idx / TOTAL_FRAMES * 2 * math.pi) + (x * 0.15))
-        if twinkle > 0.4:
-            draw.point((x, y), fill=(255, 255, 255))
-        elif twinkle > -0.3:
-            draw.point((x, y), fill=C_STARS[color_idx])
-        else:
-            draw.point((x, y), fill=(60, 75, 110))
-
-    # Crescent Moon in upper left
-    mx, my = 28, 62
-    draw.ellipse([mx, my, mx + 14, my + 14], fill=(255, 248, 220))
-    draw.ellipse([mx + 4, my - 2, mx + 18, my + 12], fill=C_SKY_TOP)
-
-    # Distant city skyline silhouettes
-    bldgs = [
-        (10, 175, 45, 260),
-        (40, 195, 68, 260),
-        (178, 185, 215, 260),
-        (210, 165, 250, 260)
-    ]
-    for x1, y1, x2, y2 in bldgs:
-        draw.rectangle([x1, y1, x2, y2], fill=C_DISTANT_BLDGS)
-        for wy in range(y1 + 8, y2 - 10, 12):
-            for wx in range(x1 + 6, x2 - 6, 8):
-                if (wx + wy) % 7 == 0:
-                    draw.point((wx, wy), fill=C_DISTANT_WIN)
-
-
-def draw_ground(draw, frame_idx):
-    y_ground = 260
-
-    # Sidewalk with slab joints
-    draw.rectangle([0, y_ground, WIDTH, y_ground + 14], fill=C_SIDEWALK)
-    for x in range(0, WIDTH, 24):
-        draw.line([(x, y_ground), (x, y_ground + 14)], fill=C_SIDEWALK_LINE, width=1)
-
-    # Curb edge
-    draw.line([(0, y_ground + 14), (WIDTH, y_ground + 14)], fill=(20, 24, 30), width=1)
-
-    # Asphalt street
-    draw.rectangle([0, y_ground + 15, WIDTH, HEIGHT], fill=C_ROAD)
-    # Dashed road centerline
-    dash_y = y_ground + 35
-    for x in range(12, WIDTH, 32):
-        draw.line([(x, dash_y), (x + 16, dash_y)], fill=C_ROAD_LINE, width=2)
-
-    # Construction cones
-    for cx in [52, 202]:
-        draw.polygon([(cx + 4, y_ground + 2), (cx + 1, y_ground + 12), (cx + 7, y_ground + 12)], fill=C_CONE_ORANGE)
-        draw.line([(cx + 2, y_ground + 7), (cx + 6, y_ground + 7)], fill=C_CONE_WHITE, width=1)
-        draw.line([(cx, y_ground + 12), (cx + 8, y_ground + 12)], fill=C_CONE_ORANGE, width=1)
-
-    # Street lamp at x=28
-    lx = 28
-    draw.line([(lx, y_ground - 45), (lx, y_ground + 2)], fill=(70, 75, 85), width=2)
-    draw.line([(lx, y_ground - 45), (lx + 8, y_ground - 45)], fill=(70, 75, 85), width=2)
-    draw.rectangle([lx + 6, y_ground - 44, lx + 12, y_ground - 40], fill=(255, 230, 130))
-    draw.point((lx + 9, y_ground - 42), fill=(255, 255, 255))
-
-
 def render_tower_frame(state, frame_idx):
     floors = max(1, min(MAX_FLOORS, state["floors"]))
     mode = state["status"]
     streak = state["current_streak"]
     inactive_days = state["inactive_days"]
 
-    im = Image.new("RGB", (WIDTH, HEIGHT), C_SKY_TOP)
+    im = Image.new("RGB", (WIDTH, HEIGHT), (15, 18, 30))
     draw = ImageDraw.Draw(im)
 
-    draw_background(draw, frame_idx)
-
-    # Building bounds
-    bldg_w = 96
-    bldg_x1 = (WIDTH - bldg_w) // 2
-    bldg_x2 = bldg_x1 + bldg_w
-    y_base = 260
-    lobby_h = 24
-    floor_h = 15
-
-    # 1. Lobby Floor (Floor 1)
-    y_lobby_top = y_base - lobby_h
-    draw.rectangle([bldg_x1, y_lobby_top, bldg_x2, y_base], fill=C_BLDG_LOBBY, outline=C_BLDG_EDGE)
-    # Marquee awning
-    draw.rectangle([bldg_x1 + 24, y_lobby_top + 8, bldg_x2 - 24, y_lobby_top + 11], fill=(227, 179, 65))
-    # Glass entrance doors
-    draw.rectangle([bldg_x1 + 32, y_lobby_top + 12, bldg_x2 - 32, y_base], fill=(255, 215, 120))
-    draw.line([(bldg_x1 + 48, y_lobby_top + 12), (bldg_x1 + 48, y_base)], fill=(60, 50, 30), width=1)
-    # Lobby side windows
-    draw.rectangle([bldg_x1 + 8, y_lobby_top + 6, bldg_x1 + 22, y_base - 4], fill=(70, 100, 130))
-    draw.rectangle([bldg_x2 - 22, y_lobby_top + 6, bldg_x2 - 8, y_base - 4], fill=(70, 100, 130))
-    # Marquee plaque
-    draw.line([(bldg_x1 + 34, y_lobby_top + 4), (bldg_x2 - 34, y_lobby_top + 4)], fill=(227, 179, 65), width=2)
-
-    # 2. Standard Floors (Floor 2 to N)
-    curr_y = y_lobby_top
-    for f in range(2, floors + 1):
-        f_top = curr_y - floor_h
-        f_bot = curr_y
-        is_top_active = (f == floors)
-
-        if is_top_active and mode == "DEMOLISHING":
-            # Demolition top floor: cracked concrete, exposed rebar
-            draw.rectangle([bldg_x1, f_top + 3, bldg_x2 - 14, f_bot], fill=(45, 40, 42), outline=C_BLDG_EDGE)
-            # Jagged crumbled corner
-            draw.polygon([
-                (bldg_x2 - 14, f_bot),
-                (bldg_x2 - 18, f_top + 5),
-                (bldg_x2 - 8, f_top + 11),
-                (bldg_x2 - 4, f_bot)
-            ], fill=(35, 30, 32))
-            # Structural rebar sticking out
-            draw.line([(bldg_x2 - 12, f_top + 4), (bldg_x2 - 6, f_top - 2)], fill=(110, 115, 125), width=1)
-            draw.line([(bldg_x2 - 16, f_top + 2), (bldg_x2 - 12, f_top - 4)], fill=(110, 115, 125), width=1)
-            # Wall cracks
-            draw.line([(bldg_x1 + 22, f_top + 3), (bldg_x1 + 34, f_bot - 2)], fill=(15, 15, 18), width=1)
-            draw.line([(bldg_x1 + 52, f_top + 1), (bldg_x1 + 62, f_bot - 4)], fill=(15, 15, 18), width=1)
-            # Hazard stripes
-            for hx in range(bldg_x1 + 4, bldg_x2 - 24, 12):
-                draw.line([(hx, f_bot - 2), (hx + 6, f_bot - 7)], fill=(240, 180, 40), width=2)
-                draw.line([(hx + 6, f_bot - 2), (hx + 12, f_bot - 7)], fill=(20, 20, 20), width=2)
-        elif is_top_active and mode == "CONSTRUCTING":
-            # Construction top floor: steel I-beam frame & scaffolding
-            draw.rectangle([bldg_x1, f_top, bldg_x2, f_bot], fill=(22, 27, 34), outline=C_BLDG_EDGE)
-            draw.line([(bldg_x1, f_top), (bldg_x2, f_top)], fill=C_CRANE_STEEL, width=2)
-            for gx in range(bldg_x1 + 12, bldg_x2, 18):
-                draw.line([(gx, f_top), (gx, f_bot)], fill=C_CRANE_STEEL, width=2)
-                draw.line([(gx - 12, f_top), (gx, f_bot)], fill=C_CRANE_DARK, width=1)
-            # Scaffolding planks
-            draw.rectangle([bldg_x1 + 14, f_bot - 3, bldg_x2 - 14, f_bot - 1], fill=(150, 105, 65))
+    # 1. Sunset / Twilight Sky Gradient
+    y_ground = 195
+    for y in range(y_ground):
+        t = y / y_ground
+        if t < 0.35:
+            p = t / 0.35
+            r = int(18 * (1 - p) + 38 * p)
+            g = int(20 * (1 - p) + 26 * p)
+            b = int(45 * (1 - p) + 68 * p)
+        elif t < 0.7:
+            p = (t - 0.35) / 0.35
+            r = int(38 * (1 - p) + 98 * p)
+            g = int(26 * (1 - p) + 38 * p)
+            b = int(68 * (1 - p) + 78 * p)
         else:
-            # Completed floor
-            draw.rectangle([bldg_x1, f_top, bldg_x2, f_bot], fill=C_BLDG_WALL, outline=C_BLDG_EDGE)
-            draw.line([(bldg_x1 - 2, f_top), (bldg_x2 + 2, f_top)], fill=(65, 72, 83), width=1)
+            p = (t - 0.7) / 0.3
+            r = int(98 * (1 - p) + 185 * p)
+            g = int(38 * (1 - p) + 85 * p)
+            b = int(78 * (1 - p) + 68 * p)
+        draw.line([(0, y), (WIDTH, y)], fill=(r, g, b))
 
-            # 4 windows
-            win_y1 = f_top + 3
-            win_y2 = f_bot - 3
-            wins = [
-                (bldg_x1 + 8, bldg_x1 + 22),
-                (bldg_x1 + 30, bldg_x1 + 44),
-                (bldg_x1 + 52, bldg_x1 + 66),
-                (bldg_x1 + 74, bldg_x1 + 88),
-            ]
-            for w_idx, (wx1, wx2) in enumerate(wins):
-                seed = (f * 7 + w_idx * 13) % 10
-                if seed in [0, 1, 2]:
-                    # Warm office light
-                    draw.rectangle([wx1, win_y1, wx2, win_y2], fill=(255, 224, 130))
-                    draw.line([((wx1 + wx2) // 2, win_y1), ((wx1 + wx2) // 2, win_y2)], fill=(70, 60, 40))
-                elif seed in [3, 4]:
-                    # Dev screen / Server glow
-                    draw.rectangle([wx1, win_y1, wx2, win_y2], fill=(88, 166, 255))
-                    if (frame_idx + w_idx) % 2 == 0:
-                        draw.line([(wx1 + 2, win_y2 - 2), (wx2 - 2, win_y2 - 2)], fill=(255, 255, 255))
-                else:
-                    # Dark night window
-                    draw.rectangle([wx1, win_y1, wx2, win_y2], fill=(20, 24, 33))
-                    draw.line([(wx1 + 2, win_y1 + 2), (wx1 + 6, win_y2 - 2)], fill=(35, 42, 55))
+    # Stars in upper sky
+    stars = [
+        (18, 22), (45, 15), (82, 35), (145, 20), (210, 25), (280, 18), (340, 28),
+        (30, 48), (95, 55), (175, 42), (255, 48), (320, 52), (355, 38)
+    ]
+    for sx, sy in stars:
+        tw = math.sin((frame_idx / TOTAL_FRAMES * 2 * math.pi) + (sx * 0.1))
+        if tw > 0.3:
+            draw.point((sx, sy), fill=(255, 255, 255))
+        elif tw > -0.3:
+            draw.point((sx, sy), fill=(255, 240, 200))
+        else:
+            draw.point((sx, sy), fill=(120, 100, 140))
 
-        curr_y = f_top
+    # Glowing Crescent Moon
+    mx, my = 320, 32
+    draw.ellipse([mx, my, mx + 16, my + 16], fill=(255, 245, 215))
+    draw.ellipse([mx + 5, my - 2, mx + 20, my + 14], fill=(30, 24, 52))
 
-    roof_y = curr_y
+    # Distant Silhouette Cityline at Horizon
+    far_skyline = [
+        (0, 155, 35), (25, 145, 40), (55, 160, 30), (75, 150, 45),
+        (260, 152, 38), (288, 142, 45), (322, 158, 35), (348, 148, 40)
+    ]
+    for fx, fy, fw in far_skyline:
+        draw.rectangle([fx, fy, fx + fw, y_ground], fill=(42, 22, 50))
+        for r_y in range(fy + 6, y_ground - 8, 10):
+            for r_x in range(fx + 4, fx + fw - 4, 6):
+                if (r_x + r_y) % 5 == 0:
+                    draw.point((r_x, r_y), fill=(140, 65, 75))
 
-    # 3. Machinery: Tower Crane OR Demolition Wrecking Ball
+    # 2. Ground & Construction Site
+    # Soil/Gravel lot
+    draw.rectangle([0, y_ground, WIDTH, y_ground + 22], fill=(48, 38, 42))
+    # Concrete pavement slab under building
+    draw.rectangle([80, y_ground, 260, y_ground + 10], fill=(70, 72, 82))
+    draw.line([(80, y_ground), (260, y_ground)], fill=(95, 98, 110), width=1)
+
+    # Road curb & Asphalt
+    draw.rectangle([0, y_ground + 22, WIDTH, HEIGHT], fill=(26, 28, 34))
+    draw.line([(0, y_ground + 22), (WIDTH, y_ground + 22)], fill=(55, 58, 68), width=1)
+    for rx in range(15, WIDTH, 36):
+        draw.line([(rx, y_ground + 38), (rx + 18, y_ground + 38)], fill=(230, 175, 45), width=2)
+
+    # Left: Construction Office Trailer
+    draw.rectangle([18, y_ground - 26, 68, y_ground], fill=(52, 60, 75), outline=(35, 42, 54))
+    draw.rectangle([16, y_ground - 28, 70, y_ground - 25], fill=(85, 95, 115))
+    draw.rectangle([24, y_ground - 18, 34, y_ground], fill=(75, 85, 105))
+    draw.rectangle([42, y_ground - 22, 60, y_ground - 8], fill=(255, 215, 120))
+    draw.line([(51, y_ground - 22), (51, y_ground - 8)], fill=(52, 60, 75), width=1)
+    draw.line([(62, y_ground - 38), (62, y_ground - 28)], fill=(120, 125, 135), width=1)
+    draw.point((62, y_ground - 39), fill=(255, 80, 80) if (frame_idx % 2 == 0) else (100, 30, 30))
+
+    # Pallet of Red Bricks
+    draw.rectangle([75, y_ground - 8, 92, y_ground], fill=(165, 62, 50))
+    for by in range(y_ground - 7, y_ground, 3):
+        draw.line([(75, by), (92, by)], fill=(130, 45, 35), width=1)
+
+    # Right: Generator & Traffic Cones
+    draw.rectangle([270, y_ground - 14, 292, y_ground], fill=(230, 160, 40), outline=(160, 105, 20))
+    draw.rectangle([274, y_ground - 11, 282, y_ground - 5], fill=(30, 30, 35))
+    for cx in [98, 255, 305]:
+        draw.polygon([(cx + 4, y_ground - 12), (cx + 1, y_ground), (cx + 7, y_ground)], fill=(245, 105, 55))
+        draw.line([(cx + 2, y_ground - 6), (cx + 6, y_ground - 6)], fill=(255, 255, 255), width=1)
+        draw.line([(cx, y_ground), (cx + 8, y_ground)], fill=(245, 105, 55), width=1)
+
+    # Street Lamp on right
+    lx = 345
+    draw.line([(lx, y_ground - 55), (lx, y_ground)], fill=(80, 85, 95), width=2)
+    draw.line([(lx - 12, y_ground - 55), (lx, y_ground - 55)], fill=(80, 85, 95), width=2)
+    draw.rectangle([lx - 14, y_ground - 54, lx - 8, y_ground - 50], fill=(255, 235, 140))
+    draw.point((lx - 11, y_ground - 52), fill=(255, 255, 255))
+
+    # 3. THE TOWER (Centered at X = 110 to 235, width = 125px)
+    b_x1 = 110
+    b_x2 = 235
+
+    # --- LOBBY (Tier 1: Always Present) ---
+    lobby_top = 150
+    draw.rectangle([b_x1, lobby_top, b_x2, y_ground], fill=(38, 44, 58), outline=(58, 66, 84))
+    draw.rectangle([b_x1, lobby_top, b_x1 + 8, y_ground], fill=(48, 55, 72))
+    draw.rectangle([b_x2 - 8, lobby_top, b_x2, y_ground], fill=(48, 55, 72))
+    # Grand Glass Entrance
+    draw.rectangle([b_x1 + 42, lobby_top + 16, b_x2 - 42, y_ground], fill=(255, 225, 130))
+    draw.line([((b_x1 + b_x2) // 2, lobby_top + 16), ((b_x1 + b_x2) // 2, y_ground)], fill=(65, 50, 30), width=1)
+    # Golden Awning above entrance
+    draw.rectangle([b_x1 + 36, lobby_top + 12, b_x2 - 36, lobby_top + 16], fill=(235, 180, 50))
+    # Glowing Sign
+    draw.rectangle([b_x1 + 25, lobby_top + 4, b_x2 - 25, lobby_top + 11], fill=(22, 26, 36), outline=(235, 180, 50))
+    draw_pixel_text(draw, "DINESH TOWER", b_x1 + 29, lobby_top + 5, color=(255, 220, 100), scale=1)
+
+    # Windows with interior silhouettes
+    draw.rectangle([b_x1 + 14, lobby_top + 14, b_x1 + 34, y_ground - 6], fill=(75, 115, 150))
+    draw.rectangle([b_x2 - 34, lobby_top + 14, b_x2 - 14, y_ground - 6], fill=(75, 115, 150))
+
+    # Cute Little Worker outside the lobby door
+    wx, wy = b_x1 + 32, y_ground - 14
+    draw.rectangle([wx, wy, wx + 6, wy + 2], fill=(255, 210, 50))
+    draw.line([(wx - 1, wy + 2), (wx + 7, wy + 2)], fill=(235, 180, 30), width=1)
+    draw.rectangle([wx + 1, wy + 3, wx + 5, wy + 5], fill=(255, 205, 175))
+    draw.rectangle([wx, wy + 6, wx + 6, wy + 10], fill=(245, 105, 30))
+    draw.line([(wx + 2, wy + 7), (wx + 4, wy + 7)], fill=(255, 255, 255), width=1)
+    draw.rectangle([wx + 1, wy + 11, wx + 5, wy + 14], fill=(45, 65, 95))
+
+    curr_top = lobby_top
+
+    # --- FLOOR 2: DEV SUITE (If floors >= 2) ---
+    if floors >= 2:
+        f2_top = 115
+        draw.rectangle([b_x1 + 4, f2_top, b_x2 - 4, curr_top], fill=(34, 40, 52), outline=(52, 60, 76))
+        draw.line([(b_x1 + 2, curr_top), (b_x2 - 2, curr_top)], fill=(85, 95, 115), width=2)
+        for wx1 in [b_x1 + 12, b_x1 + 42, b_x1 + 72, b_x1 + 98]:
+            wx2 = wx1 + 18
+            draw.rectangle([wx1, f2_top + 6, wx2, curr_top - 6], fill=(255, 220, 110))
+            draw.line([((wx1 + wx2) // 2, f2_top + 6), ((wx1 + wx2) // 2, curr_top - 6)], fill=(65, 55, 35))
+        draw.rectangle([b_x1 + 6, curr_top - 4, b_x1 + 12, curr_top], fill=(40, 140, 70))
+        curr_top = f2_top
+
+    # --- FLOOR 3: CLOUD LAB (If floors >= 3) ---
+    if floors >= 3:
+        f3_top = 80
+        draw.rectangle([b_x1 + 8, f3_top, b_x2 - 8, curr_top], fill=(28, 34, 45), outline=(48, 56, 70))
+        draw.line([(b_x1 + 6, curr_top), (b_x2 - 6, curr_top)], fill=(85, 95, 115), width=2)
+        for wx1 in [b_x1 + 18, b_x1 + 46, b_x1 + 74]:
+            wx2 = wx1 + 18
+            draw.rectangle([wx1, f3_top + 6, wx2, curr_top - 6], fill=(0, 210, 210))
+            if (frame_idx + wx1) % 2 == 0:
+                draw.point((wx1 + 4, curr_top - 10), fill=(255, 255, 255))
+        curr_top = f3_top
+
+    # --- FLOOR 4+: SKY PENTHOUSE (If floors >= 4) ---
+    if floors >= 4:
+        f4_top = 48
+        draw.rectangle([b_x1 + 14, f4_top, b_x2 - 14, curr_top], fill=(24, 30, 40), outline=(42, 50, 64))
+        draw.line([(b_x1 + 12, curr_top), (b_x2 - 12, curr_top)], fill=(85, 95, 115), width=2)
+        draw.rectangle([b_x1 + 22, f4_top + 5, b_x2 - 22, curr_top - 5], fill=(255, 230, 140))
+        curr_top = f4_top
+
+    roof_y = curr_top
+
+    # 4. ROOF MACHINERY: TOWER CRANE vs WRECKING BALL
     if mode == "CONSTRUCTING":
-        crane_x = bldg_x1 + 24
-        crane_mast_h = 36
-        crane_top_y = roof_y - crane_mast_h
+        crane_x = b_x1 + 35
+        crane_mast_h = 42
+        crane_top = roof_y - crane_mast_h
 
-        # Crane vertical mast
-        draw.line([(crane_x, roof_y), (crane_x, crane_top_y)], fill=C_CRANE_STEEL, width=3)
-        for my in range(crane_top_y + 4, roof_y, 6):
-            draw.line([(crane_x - 3, my), (crane_x + 3, my)], fill=C_CRANE_DARK, width=1)
+        draw.line([(crane_x, roof_y), (crane_x, crane_top)], fill=(255, 185, 30), width=3)
+        for my in range(crane_top + 4, roof_y, 6):
+            draw.line([(crane_x - 3, my), (crane_x + 3, my)], fill=(185, 125, 15), width=1)
 
-        # Horizontal jib arm
-        jib_y = crane_top_y + 4
-        draw.line([(crane_x - 18, jib_y), (crane_x + 48, jib_y)], fill=C_CRANE_STEEL, width=3)
-        # Counterweight block
-        draw.rectangle([crane_x - 22, jib_y - 2, crane_x - 14, jib_y + 6], fill=(70, 75, 85))
+        jib_y = crane_top + 5
+        draw.line([(crane_x - 22, jib_y), (crane_x + 65, jib_y)], fill=(255, 185, 30), width=3)
+        draw.rectangle([crane_x + 4, jib_y + 1, crane_x + 12, jib_y + 8], fill=(240, 140, 20))
+        draw.point((crane_x + 8, jib_y + 4), fill=(120, 220, 255))
+        draw.rectangle([crane_x - 26, jib_y - 2, crane_x - 16, jib_y + 7], fill=(65, 70, 80))
 
-        # Peak & blinking aircraft hazard light
-        draw.polygon([(crane_x, crane_top_y), (crane_x + 10, jib_y), (crane_x - 6, jib_y)], fill=C_CRANE_DARK)
-        beacon_color = (248, 81, 73) if (frame_idx < 3) else (80, 25, 25)
-        draw.rectangle([crane_x - 1, crane_top_y - 3, crane_x + 2, crane_top_y], fill=beacon_color)
-        if frame_idx < 3:
-            draw.point((crane_x, crane_top_y - 4), fill=(255, 180, 180))
+        # Beacon
+        draw.polygon([(crane_x, crane_top), (crane_x + 10, jib_y), (crane_x - 8, jib_y)], fill=(185, 125, 15))
+        beacon_color = (255, 50, 50) if (frame_idx < 4) else (80, 15, 15)
+        draw.rectangle([crane_x - 1, crane_top - 4, crane_x + 2, crane_top], fill=beacon_color)
+        if frame_idx < 4:
+            draw.point((crane_x, crane_top - 5), fill=(255, 200, 200))
 
-        # Cable & swaying girder
-        sway = int(round(math.sin(frame_idx / TOTAL_FRAMES * 2 * math.pi) * 3))
-        hook_x = crane_x + 30 + sway
-        hook_y = jib_y + 16
-        draw.line([(crane_x + 30, jib_y), (hook_x, hook_y)], fill=C_CABLE, width=1)
-        draw.rectangle([hook_x - 10, hook_y, hook_x + 10, hook_y + 3], fill=C_CRANE_STEEL)
+        # Swaying Girder
+        sway = int(round(math.sin(frame_idx / TOTAL_FRAMES * 2 * math.pi) * 4))
+        cable_x = crane_x + 40 + sway
+        hook_y = jib_y + 20
+        draw.line([(crane_x + 40, jib_y), (cable_x, hook_y)], fill=(120, 125, 135), width=1)
+        draw.rectangle([cable_x - 14, hook_y, cable_x + 14, hook_y + 4], fill=(255, 185, 30))
+        draw.line([(cable_x - 14, hook_y + 2), (cable_x + 14, hook_y + 2)], fill=(180, 120, 10), width=1)
 
-        # Welding sparks bursting on roof
-        spark_x = bldg_x2 - 18
-        spark_y = roof_y
-        if frame_idx in [1, 2, 4, 5]:
+        # Scaffolding & Welder on roof
+        draw.rectangle([b_x2 - 35, roof_y - 12, b_x2 - 10, roof_y], fill=(30, 36, 46), outline=(255, 185, 30))
+        draw.line([(b_x2 - 35, roof_y - 12), (b_x2 - 10, roof_y)], fill=(180, 120, 10), width=1)
+        wx, wy = b_x2 - 28, roof_y - 8
+        draw.rectangle([wx, wy, wx + 4, wy + 2], fill=(255, 210, 50))
+        draw.rectangle([wx, wy + 3, wx + 4, wy + 7], fill=(245, 105, 30))
+
+        # Welding sparks
+        spark_x = b_x2 - 20
+        spark_y = roof_y - 4
+        if frame_idx in [1, 2, 4, 5, 7]:
             draw.point((spark_x, spark_y), fill=(255, 255, 255))
-            draw.point((spark_x - 1, spark_y - 2), fill=(255, 230, 80))
+            draw.point((spark_x - 1, spark_y - 2), fill=(255, 235, 120))
             draw.point((spark_x + 2, spark_y - 3), fill=(255, 160, 40))
-            draw.point((spark_x + (frame_idx % 3), spark_y + 2), fill=(255, 240, 150))
+            draw.point((spark_x + 3, spark_y + 1), fill=(255, 255, 180))
             if frame_idx in [2, 5]:
-                draw.point((spark_x - 3, spark_y - 1), fill=(255, 255, 200))
-                draw.point((spark_x + 4, spark_y - 1), fill=(255, 200, 60))
+                draw.point((spark_x - 3, spark_y - 1), fill=(255, 255, 255))
+                draw.point((spark_x + 4, spark_y - 2), fill=(255, 200, 80))
     else:
-        # DEMOLITION: Crane & Wrecking Ball
-        crane_x = bldg_x1 - 10
-        crane_top_y = roof_y - 10
-        boom_start = (crane_x, roof_y + 20)
-        boom_end = (crane_x + 26, crane_top_y)
-        draw.line([boom_start, boom_end], fill=(180, 140, 40), width=3)
-        draw.line([(boom_start[0], boom_start[1] - 8), (boom_end[0] - 6, boom_end[1] + 6)], fill=(120, 90, 25), width=1)
+        # DEMOLITION: Wrecking Ball
+        crane_x = b_x1 - 15
+        boom_start = (crane_x, y_ground - 20)
+        boom_end = (crane_x + 45, roof_y - 15)
 
-        # Pendulum swing
-        swing_angle = math.sin(frame_idx / TOTAL_FRAMES * 2 * math.pi) * 0.45
-        cable_len = 34
+        draw.line([boom_start, boom_end], fill=(245, 130, 25), width=4)
+        draw.line([(boom_start[0], boom_start[1] - 10), (boom_end[0] - 8, boom_end[1] + 8)], fill=(160, 80, 10), width=1)
+
+        swing_angle = math.sin(frame_idx / TOTAL_FRAMES * 2 * math.pi) * 0.55
+        cable_len = 38
         ball_x = int(boom_end[0] + math.sin(swing_angle) * cable_len)
         ball_y = int(boom_end[1] + math.cos(swing_angle) * cable_len)
-        draw.line([boom_end, (ball_x, ball_y)], fill=(100, 105, 115), width=1)
 
-        # Wrecking ball
-        draw.ellipse([ball_x - 5, ball_y - 5, ball_x + 5, ball_y + 5], fill=(65, 70, 80), outline=(90, 95, 105))
-        draw.point((ball_x - 2, ball_y - 2), fill=(160, 165, 175))
+        draw.line([boom_end, (ball_x, ball_y)], fill=(100, 105, 115), width=2)
+        draw.ellipse([ball_x - 6, ball_y - 6, ball_x + 6, ball_y + 6], fill=(55, 60, 70), outline=(85, 90, 100))
+        draw.point((ball_x - 2, ball_y - 2), fill=(185, 190, 200))
 
-        # Falling debris
-        debris_y_offset = (frame_idx * 4) % 24
-        draw.rectangle([bldg_x2 - 14, roof_y + debris_y_offset, bldg_x2 - 11, roof_y + debris_y_offset + 3], fill=(80, 85, 95))
-        draw.point((bldg_x2 - 8, roof_y + 4 + debris_y_offset), fill=(140, 145, 155))
+        # Crumbled corner
+        draw.polygon([
+            (b_x2 - 25, roof_y),
+            (b_x2 - 18, roof_y + 8),
+            (b_x2 - 10, roof_y + 4),
+            (b_x2 - 6, roof_y + 15),
+            (b_x2 - 28, roof_y + 12)
+        ], fill=(22, 26, 34))
+        draw.line([(b_x2 - 18, roof_y + 2), (b_x2 - 10, roof_y - 5)], fill=(120, 125, 135), width=1)
+        draw.line([(b_x2 - 12, roof_y + 4), (b_x2 - 4, roof_y - 2)], fill=(120, 125, 135), width=1)
 
-        # Dust puff
-        if frame_idx in [3, 4, 5]:
-            draw.ellipse([bldg_x2 - 20, roof_y - 6, bldg_x2 - 4, roof_y + 6], fill=(70, 75, 85))
-            draw.point((bldg_x2 - 12, roof_y), fill=(110, 115, 125))
+        # Debris
+        debris_drop = (frame_idx * 5) % 30
+        draw.rectangle([b_x2 - 16, roof_y + debris_drop, b_x2 - 12, roof_y + debris_drop + 3], fill=(85, 90, 100))
+        draw.point((b_x2 - 8, roof_y + 6 + debris_drop), fill=(150, 155, 165))
 
-        # Amber caution beacon
+        if frame_idx in [2, 3, 4, 5]:
+            draw.ellipse([b_x2 - 28, roof_y - 8, b_x2 - 6, roof_y + 12], fill=(75, 80, 92))
+            draw.point((b_x2 - 16, roof_y), fill=(120, 125, 135))
+
+        for hx in range(b_x1 + 10, b_x2 - 30, 12):
+            draw.line([(hx, roof_y - 2), (hx + 6, roof_y - 7)], fill=(245, 190, 40), width=2)
+            draw.line([(hx + 6, roof_y - 2), (hx + 12, roof_y - 7)], fill=(20, 20, 20), width=2)
+
         amber_on = (frame_idx % 2 == 0)
-        beacon_color = (240, 180, 40) if amber_on else (90, 65, 15)
-        draw.rectangle([boom_end[0] - 2, boom_end[1] - 4, boom_end[0] + 2, boom_end[1]], fill=beacon_color)
+        draw.rectangle([boom_end[0] - 2, boom_end[1] - 5, boom_end[0] + 2, boom_end[1]], fill=(255, 185, 30) if amber_on else (90, 60, 10))
 
-    # 4. Draw Ground
-    draw_ground(draw, frame_idx)
+    # 5. RETRO ARCADE HUD OVERLAY
+    draw.rectangle([10, 8, WIDTH - 10, 36], fill=(18, 22, 32), outline=(50, 60, 80))
+    draw_pixel_text(draw, f"FLOOR {floors}", 18, 12, color=(255, 255, 255), scale=2)
+    streak_str = f"🔥 {streak}D STREAK" if streak > 0 else f"💤 {inactive_days}D INACTIVE"
+    streak_col = (255, 190, 40) if streak > 0 else (255, 90, 80)
+    draw_pixel_text(draw, streak_str, 18, 25, color=streak_col, scale=1)
 
-    # 5. Retro HUD Header & Footer
-    # Top HUD Bar
-    draw.rectangle([8, 8, WIDTH - 8, 38], fill=(13, 17, 23), outline=(48, 54, 61))
-    draw_pixel_text(draw, f"FLOOR {floors}", 16, 12, color=(255, 255, 255), scale=2)
-
-    if streak > 0:
-        streak_str = f"STREAK: {streak}D"
-        streak_col = (210, 153, 34)
-    else:
-        streak_str = f"INACTIVE: {inactive_days}D"
-        streak_col = (248, 81, 73)
-    draw_pixel_text(draw, streak_str, 16, 26, color=streak_col, scale=1)
-
-    # Status Pill on Right
     if mode == "CONSTRUCTING":
-        badge_bg = (35, 134, 54)
-        badge_txt = "[+1 BLD]"
+        badge_bg = (35, 145, 65)
+        badge_txt = "🔨 UNDER CONSTRUCTION (+1)"
     else:
-        badge_bg = (218, 54, 51)
-        badge_txt = "[-1 DEM]"
-
-    draw.rectangle([WIDTH - 66, 14, WIDTH - 16, 32], fill=badge_bg)
-    draw_pixel_text(draw, badge_txt, WIDTH - 60, 20, color=(255, 255, 255), scale=1)
+        badge_bg = (215, 50, 45)
+        badge_txt = "⚠️ DEMOLITION ALERT (-1)"
+    draw.rectangle([WIDTH - 150, 12, WIDTH - 16, 32], fill=badge_bg)
+    draw_pixel_text(draw, badge_txt, WIDTH - 144, 18, color=(255, 255, 255), scale=1)
 
     # Bottom Ticker
-    draw.rectangle([8, HEIGHT - 20, WIDTH - 8, HEIGHT - 6], fill=(13, 17, 23), outline=(48, 54, 61))
+    draw.rectangle([10, HEIGHT - 18, WIDTH - 10, HEIGHT - 6], fill=(18, 22, 32), outline=(50, 60, 80))
     if mode == "CONSTRUCTING":
-        ticker_msg = "COMMITS BUILD FLOORS * ACTIVE TODAY!"
-        ticker_col = (88, 166, 255)
+        msg = "ACTIVE TODAY • CRANE ERECTING NEXT TIER • KEEP THE STREAK!"
+        col = (100, 210, 255)
     else:
-        ticker_msg = "INACTIVITY DEMOLISHES * COMMIT TO REBUILD"
-        ticker_col = (247, 129, 102)
-    draw_pixel_text(draw, ticker_msg, 14, HEIGHT - 16, color=ticker_col, scale=1)
+        msg = f"INACTIVE {inactive_days} DAYS • WRECKING BALL SWINGING • COMMIT TO REBUILD!"
+        col = (255, 130, 100)
+    draw_pixel_text(draw, msg, 14, HEIGHT - 14, color=col, scale=1)
 
-    # Scale to high resolution using nearest neighbor for crisp pixel art
     return im.resize((WIDTH * SCALE, HEIGHT * SCALE), resample=Image.Resampling.NEAREST)
 
 
@@ -513,12 +484,10 @@ def generate_tower(output_dir="tower", username="dineshdev-21"):
     state["updated_at"] = datetime.now(timezone.utc).isoformat()
     print("Building State:", json.dumps(state, indent=2))
 
-    # Save state.json
     state_path = os.path.join(output_dir, "state.json")
     with open(state_path, "w") as f:
         json.dump(state, f, indent=2)
 
-    # Render animated GIF frames
     print(f"Rendering {TOTAL_FRAMES} frames ({state['status']}, Floor {state['floors']})...")
     frames = [render_tower_frame(state, i) for i in range(TOTAL_FRAMES)]
 
@@ -532,7 +501,6 @@ def generate_tower(output_dir="tower", username="dineshdev-21"):
         optimize=True
     )
 
-    # Save still PNG preview
     png_path = os.path.join(output_dir, "tower.png")
     frames[0].save(png_path)
 

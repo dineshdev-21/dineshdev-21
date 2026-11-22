@@ -1,48 +1,38 @@
-# Hi there, I'm Dinesh 👋
-
-<div align="center">
-  <a href="https://github.com/dineshdev-21">
-    <img src="tower/tower.gif" width="380" alt="Dinesh's Commit Tower" />
-  </a>
-  <br>
-  <p>
-    <b>🏙️ The Commit Tower:</b> A live pixel-art skyscraper powered by my GitHub commits.<br>
-    <i>Active commits build floors & deploy cranes • Inactive days bring the wrecking ball!</i>
-  </p>
-</div>
-
----
-
-### 🕹️ How The Tower Works
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                      🏙️ COMMIT TOWER RULES                      │
-├─────────────────────────────────────────────────────────────────┤
-│ 🔨 COMMITTING: Active commit days build new floors & deploy the │
-│    yellow construction crane with animated welding sparks!       │
-│                                                                 │
-│ ⚠️ INACTIVITY: Missing days activates the demolition crane     │
-│    and swings the wrecking ball, demolishing floors one by one! │
-│                                                                 │
-│ 🏢 MILESTONES:                                                  │
-│    • Floor 1: Ground Lobby & Tech Foundation                   │
-│    • Floors 2–6: Core Engineering & Office Levels               │
-│    • Floors 7–10: High-Rise Cloud Server & Tech Labs            │
-│    • Floors 11–12+: Executive Penthouse & Rooftop Helipad       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-### 🚀 Featured Projects & Work
-- [RoadIQ](https://github.com/dineshdev-21/RoadIQ) — Intelligent road analytics and computer vision system.
-- [Safari-Rag](https://github.com/dineshdev-21/Safari-Rag) — Retrieval-Augmented Generation pipeline.
-- [my-portfolio](https://github.com/dineshdev-21/my-portfolio) — Personal web portfolio and interactive showcases.
-- [lil-agents](https://github.com/dineshdev-21/lil-agents) — Autonomous agent workflows and tool integrations.
-
----
+<h1 align="center">Hi there, I'm Dinesh 👋</h1>
+<p align="center">
+  <b>Building solutions with code • Powered by daily commits</b>
+</p>
 
 <p align="center">
-  <sub>Automated nightly via GitHub Actions ⚡ Powered by custom pixel-art engine</sub>
+  <a href="https://github.com/dineshdev-21">
+    <img src="tower/tower.gif" width="680" alt="The Commit Tower - A Living Skyscraper Built By GitHub Commits" />
+  </a>
+</p>
+
+<p align="center">
+  <em>🏙️ <b>The Commit Tower:</b> A living skyscraper built dynamically by my GitHub activity.<br>
+  Commits trigger active construction cranes & welding sparks • Inactivity brings the wrecking ball!</em>
+</p>
+
+---
+
+### 🕹️ How It Works
+
+| State | Trigger | Animation & Visuals |
+| :--- | :--- | :--- |
+| 🔨 **Constructing** | Active commits today | Yellow tower crane, hoisted steel girder, active welding sparks, +1 floor added |
+| ⚠️ **Demolishing** | Inactive days | Demolition crane, swinging wrecking ball, crumbling masonry, -1 floor per day |
+| 🏢 **Milestones** | Consecutive streaks | **Lobby** (Floor 1) → **Dev Suite** (Floor 2) → **Cloud Server Lab** (Floor 3) → **Sky Penthouse** (Floor 4+) |
+
+---
+
+### 🚀 Featured Projects
+- **[RoadIQ](https://github.com/dineshdev-21/RoadIQ)** — Intelligent road analytics & computer vision system.
+- **[Safari-Rag](https://github.com/dineshdev-21/Safari-Rag)** — Retrieval-Augmented Generation pipeline.
+- **[my-portfolio](https://github.com/dineshdev-21/my-portfolio)** — Personal web portfolio & interactive showcases.
+- **[lil-agents](https://github.com/dineshdev-21/lil-agents)** — Autonomous agent orchestration & multi-agent workflows.
+
+---
+<p align="center">
+  <sub>Automated nightly via GitHub Actions ⚡ Powered by custom procedural pixel engine</sub>
 </p>
