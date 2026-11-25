@@ -1,10 +1,10 @@
 {
-  "floors": 3,
+  "floors": 2,
   "status": "DEMOLISHING",
   "current_streak": 0,
-  "inactive_days": 1,
+  "inactive_days": 2,
   "today_commits": 0,
   "total_recent_commits": 11,
   "username": "dineshdev-21",
-  "updated_at": "2026-11-24T09:56:58.601260+00:00"
+  "updated_at": "2026-11-25T08:39:36.855392+00:00"
 }
